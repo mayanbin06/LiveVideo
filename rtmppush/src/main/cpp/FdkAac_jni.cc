@@ -17,7 +17,7 @@ extern "C" {
 #endif
 }
 
-#include "../../../libs/FdkAac/include/aacenc_lib.h"
+#include "aacenc_lib.h"
 
 #define LOG_TAG "FdaAac_jni"
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, \
@@ -76,12 +76,17 @@ FDKAAC_FUNC(jlong, FdkAacInit, jint sampleRate, jint channels) {
         return -1;
     }
 
-    return (jlong)m_aacEncHandle;
+    LOGE("m_aacEncHandle = %p", m_aacEncHandle);
+    return reinterpret_cast<jlong>(m_aacEncHandle);
 }
 
 uint8_t m_aacOutbuf[20480];
 
 FDKAAC_FUNC(jbyteArray, FdkAacEncode, jlong handle, jbyteArray buffer) {
+
+    if (handle <= 0) {
+      abort();
+    }
 
     AACENC_BufDesc in_buf = { 0 }, out_buf = { 0 };
     AACENC_InArgs in_args = { 0 };
@@ -110,7 +115,7 @@ FDKAAC_FUNC(jbyteArray, FdkAacEncode, jlong handle, jbyteArray buffer) {
     out_buf.bufElSizes = &out_elem_size;
 
     if ((aacEncEncode((HANDLE_AACENCODER)handle, &in_buf, &out_buf, &in_args, &out_args)) != AACENC_OK) {
-        fprintf(stderr, "Encoding aac failed\n");
+        LOGE("Encoding aac failed\n");
         return NULL;
     }
     if (out_args.numOutBytes == 0)

@@ -2,7 +2,7 @@ package com.myb.rtmppush;
 
 public class RtmpSession {
     static {
-        System.loadLibrary("rtmp");
+        System.loadLibrary("RtmpSession-jni");
     }
     public native long RtmpConnect(String rtmpUrl);
     public native boolean RtmpIsConnect(long handle);

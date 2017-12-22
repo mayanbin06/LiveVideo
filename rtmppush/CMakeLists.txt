@@ -1,110 +1,46 @@
 cmake_minimum_required(VERSION 3.4.1)
 
+# find android log lib to name log-lib.
+find_library(log-lib log)
 
-# add fdk
-add_library( # Specifies the name of the library.
-             FdkAac-jni
+# add fdk-jni and lib fdk.
+include_directories(${PROJECT_SOURCE_DIR}/third_party/FdkAac/include/)
+add_library(FdkAac SHARED IMPORTED)
+set_target_properties(
+    FdkAac
+    PROPERTIES IMPORTED_LOCATION
+    ${PROJECT_SOURCE_DIR}/third_party/FdkAac/lib/${ANDROID_ABI}/libFraunhoferAAC.so
+)
 
-             # Sets the library as a shared library.
-             SHARED
-
-             # Provides a relative path to your source file(s).
-             src/main/cpp/FdkAac_jni.cc )
-
-include_directories(libs/FdkAac/include/)
-add_library( FraunhoferAAC
-             SHARED
-             IMPORTED )
-
-set_target_properties( # Specifies the target library.
-                       FraunhoferAAC
-
-                       # Specifies the parameter you want to define.
-                       PROPERTIES IMPORTED_LOCATION
-
-                       # Provides the path to the library you want to import.
-                       ../../../../libs/FdkAac/lib/${ANDROID_ABI}/libFraunhoferAAC.so )
+add_library(FdkAac-jni SHARED src/main/cpp/FdkAac_jni.cc)
+target_link_libraries(FdkAac-jni FdkAac ${log-lib})
 
 # add openh264
-add_library( # Specifies the name of the library.
-             OpenH264-jni
+add_library(OpenH264-jni SHARED src/main/cpp/OpenH264_jni.cc)
 
-             # Sets the library as a shared library.
-             SHARED
+include_directories(${PROJECT_SOURCE_DIR}/third_party/openh264/include/)
+add_library(OpenH264 SHARED IMPORTED)
 
-             # Provides a relative path to your source file(s).
-             src/main/cpp/OpenH264_jni.cc )
-include_directories(libs/openh264/include/)
-add_library( OpenH264
-             SHARED
-             IMPORTED )
-
-set_target_properties( # Specifies the target library.
-                       OpenH264
-
-                       # Specifies the parameter you want to define.
-                       PROPERTIES IMPORTED_LOCATION
-
-                       # Provides the path to the library you want to import.
-                       ../../../../libs/openh264/lib/${ANDROID_ABI}/libopenh264.so )
+set_target_properties(
+    OpenH264
+    PROPERTIES IMPORTED_LOCATION
+    ${PROJECT_SOURCE_DIR}/third_party/openh264/lib/${ANDROID_ABI}/libopenh264.so
+)
+target_link_libraries(OpenH264-jni OpenH264 ${log-lib})
 
 # add rtmpsession
-add_library( # Specifies the name of the library.
-             RtmpSession-jni
+add_library(RtmpSession-jni SHARED
+            src/main/cpp/RtmpSession_jni.cc
+            src/main/cpp/RtmpSession.h
+            src/main/cpp/RtmpSession.cc)
 
-             # Sets the library as a shared library.
-             SHARED
+include_directories(${PROJECT_SOURCE_DIR}/third_party/rtmp/include/)
+add_library(Rtmp SHARED IMPORTED)
 
-             # Provides a relative path to your source file(s).
-             src/main/cpp/RtmpSession_jni.cc
-             src/main/cpp/RtmpSession.h
-             src/main/cpp/RtmpSession.cc)
+set_target_properties(
+    Rtmp
+    PROPERTIES IMPORTED_LOCATION
+    ${PROJECT_SOURCE_DIR}/third_party/rtmp/lib/${ANDROID_ABI}/librtmp.so
+)
 
-include_directories(libs/rtmp/include/)
-add_library( Rtmp
-             SHARED
-             IMPORTED )
-
-set_target_properties( # Specifies the target library.
-                       Rtmp
-
-                       # Specifies the parameter you want to define.
-                       PROPERTIES IMPORTED_LOCATION
-
-                       # Provides the path to the library you want to import.
-                       ../../../../libs/rtmp/lib/${ANDROID_ABI}/librtmp.so )
-
-find_library( # Defines the name of the path variable that stores the
-              # location of the NDK library.
-              log-lib
-
-              # Specifies the name of the NDK library that
-              # CMake needs to locate.
-              log )
-
-# Links your native library against one or more other native libraries.
-target_link_libraries( # Specifies the target library.
-                       FdkAac-jni
-
-                       FraunhoferAAC
-
-                       # Links the log library to the target library.
-                       ${log-lib} )
-
-# Links your native library against one or more other native libraries.
-target_link_libraries( # Specifies the target library.
-                       OpenH264-jni
-
-                       OpenH264
-
-                       # Links the log library to the target library.
-                       ${log-lib} )
-
-# Links your native library against one or more other native libraries.
-target_link_libraries( # Specifies the target library.
-                       RtmpSession-jni
-
-                       Rtmp
-
-                       # Links the log library to the target library.
-                       ${log-lib} )
+target_link_libraries(RtmpSession-jni Rtmp ${log-lib})

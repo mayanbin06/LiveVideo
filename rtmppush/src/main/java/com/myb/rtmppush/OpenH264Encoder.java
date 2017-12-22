@@ -9,6 +9,6 @@ public class OpenH264Encoder {
   public native byte[] EncodeH264frame(long iHandle, ByteBuffer inbuf_ptr);
   public native void DeInitEncode(long iHandle);
   static {
-      System.loadLibrary("OpenH264_jni");
+      System.loadLibrary("OpenH264-jni");
   }
 }

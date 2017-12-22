@@ -496,6 +496,7 @@ public class PushActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 确保摄像头，录音的权限。
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -511,7 +512,7 @@ public class PushActivity extends Activity {
         InitAll();
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        _wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
+        _wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "LiveVideo");
     }
 
     @Override

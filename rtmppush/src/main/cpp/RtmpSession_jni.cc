@@ -19,9 +19,7 @@ extern "C" {
 #endif
 }
 
-#include "../../../libs/FdkAac/include/aacenc_lib.h"
-
-#define LOG_TAG "FdaAac_jni"
+#define LOG_TAG "RtmpSession"
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, \
                    __VA_ARGS__))
 

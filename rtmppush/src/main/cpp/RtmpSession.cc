@@ -105,7 +105,7 @@ int RtmpSession::SendVideoData(uint8_t *buf, int len, long timestamp) {
         len -= 4;
     } else if (buf[2] == 0x01) {
         buf += 3;
-        len - 3;
+        len -= 3;
     }
 
     type = buf[0] & 0x1f;
@@ -123,10 +123,11 @@ int RtmpSession::SendVideoData(uint8_t *buf, int len, long timestamp) {
     /*key frame*/
     body[0] = 0x27;
     if (type == NAL_SLICE_IDR) {
-        body[0] = 0x17; //关键帧
+        body[0] = 0x17; //key frame
     }
 
-    body[1] = 0x01;/*nal unit*/
+    /*nal unit*/
+    body[1] = 0x01;
     body[2] = 0x00;
     body[3] = 0x00;
     body[4] = 0x00;

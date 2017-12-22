@@ -44,6 +44,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      */
     private static final int REQUEST_READ_CONTACTS = 0;
 
+    private static final String DEFAULT_EMAIL = "crawler@test.com";
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -74,6 +75,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 return false;
             }
         });
+
+        mEmailView.setText(DEFAULT_EMAIL);
+        mPasswordView.setText("*******");
 
         Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {

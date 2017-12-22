@@ -2,7 +2,7 @@ package com.myb.rtmppush;
 
 public class FdkAacEncode {
 	static {
-		System.loadLibrary("FdkAac_jni");
+		System.loadLibrary("FdkAac-jni");
 	}
 	public native long FdkAacInit(int iSampleRate, int iChannel);
 	public native byte[] FdkAacEncode(long handle, byte[] buffer);
