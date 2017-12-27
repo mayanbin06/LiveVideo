@@ -56,7 +56,7 @@ public:
     virtual ~RtmpSession();
 
 private:
-    std::unique_ptr<RTMP> rtmp;
+    RTMP* rtmp;
 };
 
 

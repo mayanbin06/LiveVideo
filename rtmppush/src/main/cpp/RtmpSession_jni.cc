@@ -66,7 +66,7 @@ RTMPSESSION_FUNC(jlong, RtmpConnect, jstring jurl) {
     int ret = session->Init(url, 3000);
     env->ReleaseStringUTFChars(jurl, url);
     if (ret != 0) {
-        LOGE("Init RtmpSession Failed.");
+        LOGE("Init RtmpSession Failed, [%s] ", url);
         return 0;
     }
     return reinterpret_cast<long> (session);
@@ -80,6 +80,7 @@ RTMPSESSION_FUNC(jboolean, RtmpIsConnect, jlong handle) {
 RTMPSESSION_FUNC(jint, RtmpSendVideoData, jlong handle, jbyteArray buffer, jlong len) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
     RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
+    // 解析sps 和 pps
     int ret = session->SendVideoData((uint8_t *)data, len, 0);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;
@@ -88,6 +89,7 @@ RTMPSESSION_FUNC(jint, RtmpSendVideoData, jlong handle, jbyteArray buffer, jlong
 RTMPSESSION_FUNC(jboolean, RtmpSendAudioData, jlong handle, jbyteArray buffer, jlong len) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
     RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
+    // 解析音频 AAC spec， 如果有需要先发送
     int ret = session->SendAacData((uint8_t *)data, len, 0);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;

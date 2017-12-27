@@ -4,6 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/LiveVideo.iml" filepath="$PROJECT_DIR$/LiveVideo.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fdkaac/fdkaac.iml" filepath="$PROJECT_DIR$/fdkaac/fdkaac.iml" />
+      <module fileurl="file://$PROJECT_DIR$/h264/openh264.iml" filepath="$PROJECT_DIR$/h264/openh264.iml" />
       <module fileurl="file://$PROJECT_DIR$/libyuv/libyuv.iml" filepath="$PROJECT_DIR$/libyuv/libyuv.iml" />
       <module fileurl="file://$PROJECT_DIR$/rtmppush/rtmppush.iml" filepath="$PROJECT_DIR$/rtmppush/rtmppush.iml" />
     </modules>

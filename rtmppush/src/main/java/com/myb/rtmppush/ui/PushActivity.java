@@ -10,26 +10,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.myb.rtmppush.FdkAacEncode;
-import com.myb.rtmppush.RtmpSession;
+import com.myb.fdkaac.FdkAacEncode;
 import com.myb.rtmppush.RtmpSessionManager;
-import com.myb.rtmppush.SWVideoEncoder;
+import com.myb.h264.SoftwareH264Encoder;
 
-import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder.AudioSource;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
@@ -42,7 +38,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -57,14 +52,17 @@ public class PushActivity extends Activity {
 
     private final static int ID_RTMP_PUSH_START = 100;
     private final static int ID_RTMP_PUSH_EXIT = 101;
-    private final int WIDTH_DEF = 480;
-    private final int HEIGHT_DEF = 640;
-    private final int FRAMERATE_DEF = 20;
+
+    //实际的 长度和宽度 在Camera Preview Sizes 里选一个。
+    private final int WIDTH_DEF = 640;
+    private final int HEIGHT_DEF = 480;
+
+    private final int FRAMERATE_DEF = 25;
     private final int BITRATE_DEF = 800 * 1000;
 
     // use real sample_rate when audio record init.
     private int SAMPLE_RATE_DEF = 22050;
-    //private int SAMPLE_RATE_DEF = 44100;
+    // 以录音设备支持为准
     private int CHANNEL_NUMBER_DEF = 2;
 
     private final String LOG_TAG = "RTMP-MAIN-ACTIVITY";
@@ -84,8 +82,9 @@ public class PushActivity extends Activity {
     // video
     public SurfaceView _mSurfaceView = null;
     private Camera _mCamera = null;
+    private Camera.CameraInfo cameraInfo;
     private boolean _bIsFront = true;
-    private SWVideoEncoder _swEncH264 = null;
+    private SoftwareH264Encoder _swEncH264 = null;
     private int _iDegrees = 0;
 
     private int _iRecorderBufferSize = 0;
@@ -96,8 +95,8 @@ public class PushActivity extends Activity {
 
     private int _iCameraCodecType = android.graphics.ImageFormat.NV21;
 
-    private ByteBuffer _yuvNV21 = ByteBuffer.allocateDirect(WIDTH_DEF * HEIGHT_DEF * 3 / 2);
-    private ByteBuffer _yuvEdit = ByteBuffer.allocateDirect(WIDTH_DEF * HEIGHT_DEF * 3 / 2);
+    private byte[] _yuvNV21 = new byte[(WIDTH_DEF * HEIGHT_DEF * 3 / 2)];
+    private byte[] _yuvEdit = new byte[(WIDTH_DEF * HEIGHT_DEF * 3 / 2)];
 
     private RtmpSessionManager _rtmpSessionMgr = null;
 
@@ -105,6 +104,26 @@ public class PushActivity extends Activity {
     private Lock _yuvQueueLock = new ReentrantLock();
 
     private Thread _h264EncoderThread = null;
+    private void dumpYuvData(byte[] yuvData, String name, int width, int height) {
+        DataOutputStream outputStream = null;
+        File saveDir = Environment.getExternalStorageDirectory();
+        String strFilename = saveDir + File.separator + name;
+        try {
+            //int[] stride = new int[] {width, width >> 1, width >> 1};
+            //YuvImage yuvImage = new YuvImage(yuvData, ImageFormat.YUV_420_888, width, height, stride);
+            outputStream = new DataOutputStream(new FileOutputStream(strFilename));
+            outputStream.write(yuvData, 0, yuvData.length);
+            //yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, outputStream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (outputStream != null) outputStream.close();
+            } catch (Exception e) {}
+        }
+    }
     private Runnable _h264Runnable = new Runnable() {
         @Override
         public void run() {
@@ -122,19 +141,27 @@ public class PushActivity extends Activity {
                         continue;
                     }
 
-                    if (_bIsFront) {
-                        _swEncH264.YUV420pRotate270(ByteBuffer.wrap(yuvData), _yuvEdit, HEIGHT_DEF, WIDTH_DEF);
-                    } else {
-                        _swEncH264.YUV420pRotate90(ByteBuffer.wrap(yuvData), _yuvEdit, HEIGHT_DEF, WIDTH_DEF);
+                    int rotate = 0;
+                    switch (_iDegrees) {
+                      case 0:
+                        // 正方向,竖直
+                        break;
+                      case 90:
+                        rotate = _bIsFront ? 90 : 270;
+                      case 180:
+                        rotate = 180;
+                      case 270:
+                        rotate = _bIsFront ? 270 : 90;
                     }
-                    byte[] h264Data = _swEncH264.EncoderH264(_yuvEdit);
+
+                    byte[] h264Data = _swEncH264.encode(yuvData, _iCameraCodecType, WIDTH_DEF, HEIGHT_DEF, rotate);
+
                     if (h264Data != null) {
                         _rtmpSessionMgr.InsertVideoData(h264Data);
                         if (DEBUG_ENABLE) {
                             try {
                                 _outputStream.write(h264Data);
                                 int iH264Len = h264Data.length;
-                                //Log.i(LOG_TAG, "Encode H264 len="+iH264Len);
                             } catch (IOException e1) {
                                 e1.printStackTrace();
                             }
@@ -235,34 +262,18 @@ public class PushActivity extends Activity {
     private Camera.PreviewCallback _previewCallback = new Camera.PreviewCallback() {
 
         @Override
-        public void onPreviewFrame(byte[] YUV, Camera currentCamera) {
+        public void onPreviewFrame(byte[] yuvData, Camera camera) {
             if (!_bStartFlag) {
                 return;
             }
-
-            boolean bBackCameraFlag = true;
-
-            byte[] yuv420 = null;
-
-            if (_iCameraCodecType == android.graphics.ImageFormat.YV12) {
-                yuv420 = new byte[YUV.length];
-                _swEncH264.swapYV12toI420_Ex(YUV, yuv420, HEIGHT_DEF, WIDTH_DEF);
-            } else if (_iCameraCodecType == android.graphics.ImageFormat.NV21) {
-                yuv420 = new byte[YUV.length];
-                _swEncH264.swapNV21toI420(ByteBuffer.wrap(YUV), ByteBuffer.wrap(yuv420), HEIGHT_DEF, WIDTH_DEF);
-            }
-
-            if (yuv420 == null) {
-                return;
-            }
-            if (!_bStartFlag) {
-                return;
-            }
+            // 将耗时操作放到Encode线程中。
             _yuvQueueLock.lock();
+            // 队列变长，弱网丢帧
+            // 其他可行的策略，降低preview的帧率，减低编码码率。
             if (_YUVQueue.size() > 1) {
                 _YUVQueue.clear();
             }
-            _YUVQueue.offer(yuv420);
+            _YUVQueue.offer(yuvData);
             _yuvQueueLock.unlock();
         }
     };
@@ -276,6 +287,7 @@ public class PushActivity extends Activity {
         List<Size> PreviewSizeList = p.getSupportedPreviewSizes();
         List<Integer> PreviewFormats = p.getSupportedPreviewFormats();
         Log.i(LOG_TAG, "Listing all supported preview sizes");
+
         for (Camera.Size size : PreviewSizeList) {
             Log.i(LOG_TAG, "  w: " + size.width + ", h: " + size.height);
         }
@@ -298,10 +310,11 @@ public class PushActivity extends Activity {
         } else if (iYV12Flag != 0) {
             _iCameraCodecType = iYV12Flag;
         }
-        p.setPreviewSize(HEIGHT_DEF, WIDTH_DEF);
+        p.setPreviewSize(WIDTH_DEF, HEIGHT_DEF);
         p.setPreviewFormat(_iCameraCodecType);
         p.setPreviewFrameRate(FRAMERATE_DEF);
 
+        // 设置相机角度。。。
         _mCamera.setDisplayOrientation(_iDegrees);
         p.setRotation(_iDegrees);
         _mCamera.setPreviewCallback(_previewCallback);
@@ -362,8 +375,8 @@ public class PushActivity extends Activity {
         _rtmpSessionMgr.Start(_rtmpUrl);
 
         int iFormat = _iCameraCodecType;
-        _swEncH264 = new SWVideoEncoder(WIDTH_DEF, HEIGHT_DEF, FRAMERATE_DEF, BITRATE_DEF);
-        _swEncH264.start(iFormat);
+        _swEncH264 = new SoftwareH264Encoder(WIDTH_DEF, HEIGHT_DEF, FRAMERATE_DEF, BITRATE_DEF);
+        //_swEncH264.start(iFormat);
 
         _bStartFlag = true;
 
@@ -384,7 +397,7 @@ public class PushActivity extends Activity {
         _h264EncoderThread.interrupt();
 
         _AudioRecorder.stop();
-        _swEncH264.stop();
+        //_swEncH264.stop();
 
         _rtmpSessionMgr.Stop();
 
@@ -480,7 +493,7 @@ public class PushActivity extends Activity {
         layoutParams.setMargins(iPos, 0, 0, 0);
 
         _mSurfaceView = (SurfaceView) this.findViewById(R.id.surfaceViewEx);
-        _mSurfaceView.getHolder().setFixedSize(HEIGHT_DEF, WIDTH_DEF);
+        _mSurfaceView.getHolder().setFixedSize(WIDTH_DEF, HEIGHT_DEF);
         _mSurfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         _mSurfaceView.getHolder().setKeepScreenOn(true);
         _mSurfaceView.getHolder().addCallback(new SurceCallBack());
@@ -504,6 +517,7 @@ public class PushActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_push);
+        // 竖屏显示， 录像一般只是竖屏，和拍照一样。
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         Intent intent = getIntent();

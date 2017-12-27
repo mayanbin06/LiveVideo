@@ -11,15 +11,15 @@ android {
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-        ndk {
-            // use 32-bit so.
-            abiFilters "armeabi-v7a"
-        }
-
         externalNativeBuild {
             cmake {
                 cppFlags "-frtti -fexceptions -std=c++11"
             }
+        }
+
+        // lib rtmp has no x86 so....
+        ndk {
+            abiFilters "armeabi-v7a", "armeabi"
         }
     }
 
@@ -44,7 +44,7 @@ android {
     sourceSets {
         main {
             // 包含所有动态库，打包到apk
-            jniLibs.srcDirs = ['third_party/FdkAac/lib', 'third_party/openh264/lib', 'third_party/rtmp/lib']
+            jniLibs.srcDirs = ['third_party/FdkAac/lib', 'third_party/openh264/lib', 'third_party/rtmp/lib', 'src/main/jniLibs']
         }
     }
 }
@@ -57,5 +57,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    implementation project(path: ':libyuv')
+    //implementation project(path: ':libyuv')
+    implementation project(path: ':h264')
+    implementation project(path: ':fdkaac')
 }

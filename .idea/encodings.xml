@@ -3,5 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/rtmppush/libs/FdkAac/include/FDK_audio.h" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/rtmppush/libs/FdkAac/include/aacenc_lib.h" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/rtmppush/third_party/FdkAac/include/aacenc_lib.h" charset="ISO-8859-1" />
   </component>
 </project>

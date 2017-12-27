@@ -26,9 +26,9 @@ public class LibYuv {
 
   // rotation mode.
   public static final int ROTATE_0 = 0;
-  public static final int ROTATE_90 = 1;
-  public static final int ROTATE_180 = 2;
-  public static final int ROTATE_270 = 3;
+  public static final int ROTATE_90 = 90;
+  public static final int ROTATE_180 = 180;
+  public static final int ROTATE_270 = 270;
 
   // use ByteBuffer a shared memory with native.
   // convert with stride(which means stride not same with width)
@@ -94,23 +94,27 @@ public class LibYuv {
   public static native int I420ToNV21(ByteBuffer yuv420p, ByteBuffer yuv420sp,
                                        int width, int height, boolean swapUV);
 
-  public static native int NV21ToI420(ByteBuffer yuv420sp, ByteBuffer yuv420p,
+  public static native int NV21ToI420(byte[] yuv420sp, byte[] yuv420p,
                                        int width, int height, boolean swapUV);
 
   public static native int I420Scale(ByteBuffer src_data, int width, int height,
                                       ByteBuffer dst_data, int dst_width, int dst_height,
                                       int mode, boolean swapUV);
 
-  public static int I420Rotate(ByteBuffer src, ByteBuffer dst, int width, int height, int mode) {
-    int y_stride = width;
-    int u_stride = width >> 1;
-    int v_stride = width >> 1;
-    return I420Rotate(src, y_stride, u_stride, v_stride,
-        dst, y_stride, u_stride, v_stride, width, height, mode);
+  public static int I420Rotate(byte[] src, byte[] dst, int width, int height, int mode) {
+    int src_y_stride = width;
+    int src_u_stride = width >> 1;
+    int src_v_stride = width >> 1;
+
+    int dst_y_stride = height;
+    int dst_u_stride = height >> 1;
+    int dst_v_stride = height >> 1;
+    return I420Rotate(src, src_y_stride, src_u_stride, src_v_stride,
+        dst, dst_y_stride, dst_u_stride, dst_v_stride, width, height, mode);
   }
 
-  public static native int I420Rotate(ByteBuffer src, int src_y_stride, int src_u_stride,
-                                       int src_v_stride, ByteBuffer dst, int dst_y_stride,
+  public static native int I420Rotate(byte[] src, int src_y_stride, int src_u_stride,
+                                       int src_v_stride, byte[] dst, int dst_y_stride,
                                        int dst_u_stride, int dst_v_stride,
                                        int width, int height, int mode);
 }

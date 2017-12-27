@@ -134,27 +134,29 @@ LIBYUV_FUNC(jint, I420ToNV21, jobject yuv420p, jobject yuv420sp,
   return ret;
 }
 
-LIBYUV_FUNC(jint, NV21ToI420, jobject yuv420sp, jobject yuv420p,
+LIBYUV_FUNC(jint, NV21ToI420, jbyteArray nv21, jbyteArray yuv420p,
             jint width, jint height, jboolean swapUV) {
-  if (!yuv420p || !yuv420sp) {
+  if (!yuv420p || !nv21) {
     LOGE("I420ToNV21, input or output buffer must be non-null!");
     return -1;
   }
 
-  // ByteBuffer backing array.
-  uint8_t* yuv420pData = (uint8_t*)env->GetDirectBufferAddress(yuv420p);
-  uint8_t* yuv420spData = (uint8_t*)env->GetDirectBufferAddress(yuv420sp);
+  uint8_t* yuv420pData = (uint8_t*)env->GetByteArrayElements(yuv420p, JNI_FALSE);
+  uint8_t* nv21Data = (uint8_t*)env->GetByteArrayElements(nv21, JNI_FALSE);
 
   size_t ySize = (size_t) (width * height);
   size_t uSize = (size_t) (width * height >> 2);
   size_t stride[] = {0, uSize};
 
   int ret = libyuv::NV21ToI420(
-      yuv420spData, width, yuv420pData + ySize, width,
+      nv21Data, width, nv21Data + ySize, width,
       yuv420pData, width,
       yuv420pData + ySize + stride[swapUV ? 1 : 0], width >> 1,
       yuv420pData + ySize + stride[swapUV ? 0 : 1], width >> 1,
       width, height);
+
+  env->ReleaseByteArrayElements(yuv420p, (jbyte*)yuv420pData, JNI_OK);
+  env->ReleaseByteArrayElements(nv21, (jbyte*)nv21Data, JNI_OK);
   return ret;
 }
 
@@ -177,14 +179,14 @@ LIBYUV_FUNC(jint, I420Scale, jobject src, jint width, jint height,
 }
 
 LIBYUV_FUNC(jint, I420Rotate,
-            jobject src, jint src_y_stride, jint src_u_stride, jint src_v_stride,
-            jobject dst, jint dst_y_stride, jint dst_u_stride, jint dst_v_stride,
+            jbyteArray src, jint src_y_stride, jint src_u_stride, jint src_v_stride,
+            jbyteArray dst, jint dst_y_stride, jint dst_u_stride, jint dst_v_stride,
             jint width, jint height, jint mode) {
   int ySize = width * height;
   int uSize = width * height >> 2;
 
-  uint8_t* srcData = (uint8_t*)env->GetDirectBufferAddress(src);
-  uint8_t * dstData = (uint8_t*)env->GetDirectBufferAddress(dst);
+  uint8_t* srcData = (uint8_t*)env->GetByteArrayElements(src, 0);
+  uint8_t* dstData = (uint8_t*)env->GetByteArrayElements(dst, 0);
 
   int ret = libyuv::I420Rotate(srcData, src_y_stride,
                                srcData + ySize, src_u_stride,
@@ -193,5 +195,7 @@ LIBYUV_FUNC(jint, I420Rotate,
                                dstData + ySize, dst_u_stride,
                                dstData + ySize + uSize, dst_v_stride,
                                width, height, (libyuv::RotationMode)mode);
-  return ret;
+  env->ReleaseByteArrayElements(src, (jbyte*)srcData, 0);
+  env->ReleaseByteArrayElements(dst, (jbyte*)dstData, 0);
+  return 0;
 }

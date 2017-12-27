@@ -14,20 +14,20 @@
 int RtmpSession::Init(std::string url, int timeOut) {
 
     RTMP_LogSetLevel(RTMP_LOGDEBUG);
-    rtmp.reset(RTMP_Alloc());
-    RTMP_Init(rtmp.get());
+    rtmp = RTMP_Alloc();
+    RTMP_Init(rtmp);
     LOGI("time out = %d",timeOut);
     rtmp->Link.timeout = timeOut;
-    RTMP_SetupURL(rtmp.get(), (char *) url.c_str());
-    RTMP_EnableWrite(rtmp.get());
+    RTMP_SetupURL(rtmp, (char *) url.c_str());
+    RTMP_EnableWrite(rtmp);
 
-    if (!RTMP_Connect(rtmp.get(), NULL) ) {
+    if (!RTMP_Connect(rtmp, NULL) ) {
         LOGI("RTMP_Connect error");
         return -1;
     }
     LOGI("RTMP_Connect success.");
 
-    if (!RTMP_ConnectStream(rtmp.get(), 0)) {
+    if (!RTMP_ConnectStream(rtmp, 0)) {
         LOGI("RTMP_ConnectStream error");
         return -1;
     }
@@ -37,7 +37,7 @@ int RtmpSession::Init(std::string url, int timeOut) {
 }
 
 bool RtmpSession::IsConnect() {
-    return RTMP_IsConnected(rtmp.get());
+    return RTMP_IsConnected(rtmp);
 }
 
 int RtmpSession::SendSpsAndPps(uint8_t *sps, int spsLen, uint8_t *pps, int ppsLen, long timestamp) {
@@ -87,10 +87,9 @@ int RtmpSession::SendSpsAndPps(uint8_t *sps, int spsLen, uint8_t *pps, int ppsLe
     packet->m_hasAbsTimestamp = 0;
     packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
     packet->m_nInfoField2 = rtmp->m_stream_id;
-
-    /*发送*/
-    if (RTMP_IsConnected(rtmp.get())) {
-        RTMP_SendPacket(rtmp.get(), packet, TRUE);
+  
+    if (RTMP_IsConnected(rtmp)) {
+        RTMP_SendPacket(rtmp, packet, TRUE);
     }
     free(packet);
     return 0;
@@ -147,8 +146,8 @@ int RtmpSession::SendVideoData(uint8_t *buf, int len, long timestamp) {
     packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
     packet->m_nTimeStamp = timestamp;
 
-    if (RTMP_IsConnected(rtmp.get())) {
-        RTMP_SendPacket(rtmp.get(), packet, TRUE);
+    if (RTMP_IsConnected(rtmp)) {
+        RTMP_SendPacket(rtmp, packet, TRUE);
     }
     free(packet);
 
@@ -177,8 +176,8 @@ int RtmpSession::SendAacSpec(uint8_t *data, int spec_len) {
     packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
     packet->m_nInfoField2 = rtmp->m_stream_id;
 
-    if (RTMP_IsConnected(rtmp.get())) {
-        RTMP_SendPacket(rtmp.get(), packet, TRUE);
+    if (RTMP_IsConnected(rtmp)) {
+        RTMP_SendPacket(rtmp, packet, TRUE);
     }
     free(packet);
 
@@ -208,18 +207,18 @@ int RtmpSession::SendAacData(uint8_t *data, int len, long timeOffset) {
         packet->m_hasAbsTimestamp = 0;
         packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
         packet->m_nInfoField2 = rtmp->m_stream_id;
-        if (RTMP_IsConnected(rtmp.get())) {
-            RTMP_SendPacket(rtmp.get(), packet, TRUE);
+        if (RTMP_IsConnected(rtmp)) {
+            RTMP_SendPacket(rtmp, packet, TRUE);
         }
-        LOGI("send packet body[0]=%x,body[1]=%x", body[0], body[1]);
+        //LOGI("send packet body[0]=%x,body[1]=%x", body[0], body[1]);
         free(packet);
     }
     return 0;
 }
 
 int RtmpSession::Stop() const {
-    RTMP_Close(rtmp.get());
-    RTMP_Free(rtmp.get());
+    RTMP_Close(rtmp);
+    RTMP_Free(rtmp);
     return 0;
 }
 

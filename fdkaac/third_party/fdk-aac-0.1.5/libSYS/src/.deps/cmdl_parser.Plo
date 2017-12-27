@@ -1,0 +1,87 @@
+libSYS/src/cmdl_parser.lo: libSYS/src/cmdl_parser.cpp \
+ /home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stdarg.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdio.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/cdefs.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/cdefs_elf.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/android/api-level.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/types.h \
+ /home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stddef.h \
+ /home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stdint.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdint.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/_types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/machine/_types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/posix_types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/stddef.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/compiler.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/asm/posix_types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/asm/types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/types.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/machine/kernel.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/sysmacros.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/string.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/malloc.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdlib.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/alloca.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/strings.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/memory.h \
+ /home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/ctype.h \
+ libSYS/include/cmdl_parser.h libSYS/include/machine_type.h \
+ libSYS/include/genericStds.h
+
+/home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stdarg.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdio.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/cdefs.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/cdefs_elf.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/android/api-level.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/types.h:
+
+/home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stddef.h:
+
+/home/myb/sdk/android-ndk-r12b/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/include/stdint.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdint.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/_types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/machine/_types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/posix_types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/stddef.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/compiler.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/asm/posix_types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/asm/types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/linux/types.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/machine/kernel.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/sys/sysmacros.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/string.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/malloc.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/stdlib.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/alloca.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/strings.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/memory.h:
+
+/home/myb/sdk/android-ndk-r12b/platforms/android-9/arch-arm/usr/include/ctype.h:
+
+libSYS/include/cmdl_parser.h:
+
+libSYS/include/machine_type.h:
+
+libSYS/include/genericStds.h:

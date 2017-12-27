@@ -1,0 +1,54 @@
+./obj/local/arm64-v8a/objs/FraunhoferAAC/libAACenc/src/grp_data.o: \
+  libAACenc/src/grp_data.cpp libAACenc/src/psy_const.h \
+  libAACenc/src/interface.h libFDK/include/common_fix.h \
+  libFDK/include/FDK_archdef.h libSYS/include/machine_type.h \
+  libFDK/include/fixmul.h libFDK/include/aarch64/fixmul_aarch64.h \
+  libFDK/include/abs.h libFDK/include/clz.h \
+  libFDK/include/aarch64/clz_aarch64.h libFDK/include/fixmadd.h \
+  libFDK/include/fixminmax.h libFDK/include/cplx_mul.h \
+  libFDK/include/scale.h libSYS/include/genericStds.h \
+  libFDK/include/../src/scale.cpp libFDK/include/fixpoint_math.h \
+  libSYS/include/FDK_audio.h libAACenc/src/psy_data.h \
+  libAACenc/src/block_switch.h libAACenc/src/aacenc_tns.h
+
+libAACenc/src/psy_const.h:
+
+libAACenc/src/interface.h:
+
+libFDK/include/common_fix.h:
+
+libFDK/include/FDK_archdef.h:
+
+libSYS/include/machine_type.h:
+
+libFDK/include/fixmul.h:
+
+libFDK/include/aarch64/fixmul_aarch64.h:
+
+libFDK/include/abs.h:
+
+libFDK/include/clz.h:
+
+libFDK/include/aarch64/clz_aarch64.h:
+
+libFDK/include/fixmadd.h:
+
+libFDK/include/fixminmax.h:
+
+libFDK/include/cplx_mul.h:
+
+libFDK/include/scale.h:
+
+libSYS/include/genericStds.h:
+
+libFDK/include/../src/scale.cpp:
+
+libFDK/include/fixpoint_math.h:
+
+libSYS/include/FDK_audio.h:
+
+libAACenc/src/psy_data.h:
+
+libAACenc/src/block_switch.h:
+
+libAACenc/src/aacenc_tns.h:
