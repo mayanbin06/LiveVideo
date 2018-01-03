@@ -60,4 +60,5 @@ dependencies {
     //implementation project(path: ':libyuv')
     implementation project(path: ':h264')
     implementation project(path: ':fdkaac')
+    implementation project(path: ':rtmp')
 }

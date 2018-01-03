@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SRS_LIB_RTMP_HPP
 #define SRS_LIB_RTMP_HPP
 
+#define __arm__
 /*
 #include <srs_librtmp.h>
 */

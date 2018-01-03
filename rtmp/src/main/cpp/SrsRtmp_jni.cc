@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string>
 #include <android/log.h>
-#include "RtmpSession.h"
+#include "SrsRtmp.h"
 
 extern "C" {
 #ifdef __cplusplus
@@ -19,23 +19,23 @@ extern "C" {
 #endif
 }
 
-#define LOG_TAG "RtmpSession"
+#define LOG_TAG "SrsRtmp"
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, \
                    __VA_ARGS__))
 
-#define RTMPSESSION_FUNC(RETURN_TYPE, NAME, ...) \
+#define SRSRTMP_FUNC(RETURN_TYPE, NAME, ...) \
   extern "C" { \
   JNIEXPORT RETURN_TYPE \
-    Java_com_myb_rtmppush_RtmpSessionImpl_ ## NAME \
+    Java_com_myb_rtmp_SrsRtmp_ ## NAME \
       (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
   } \
   JNIEXPORT RETURN_TYPE \
-    Java_com_myb_rtmppush_RtmpSessionImpl_ ## NAME \
+    Java_com_myb_rtmp_SrsRtmp_ ## NAME \
       (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 std::string ConvertJStringToString(JNIEnv* env, jstring src) {
     if (!src) {
-        return nullptr;
+        return NULL;
     }
 
     const jsize length = env->GetStringLength(src);
@@ -59,44 +59,54 @@ std::string ConvertJStringToString(JNIEnv* env, jstring src) {
     return stemp;
 }
 
-RTMPSESSION_FUNC(jlong, RtmpConnect, jstring jurl) {
+SRSRTMP_FUNC(jlong, Connect, jstring jurl) {
 
     const char* url = env->GetStringUTFChars(jurl, 0);
-    RtmpSession* session = new RtmpSession();
-    int ret = session->Init(url, 3000);
+    SrsRtmp* session = new SrsRtmp(url, 3000);
     env->ReleaseStringUTFChars(jurl, url);
-    if (ret != 0) {
-        LOGE("Init RtmpSession Failed, [%s] ", url);
+    if (!session->Connect()) {
+        LOGE("Init RtmpSession Failed, [%s] ", session->url().c_str());
         return 0;
     }
     return reinterpret_cast<long> (session);
 }
 
-RTMPSESSION_FUNC(jboolean, RtmpIsConnect, jlong handle) {
-    RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
+SRSRTMP_FUNC(jboolean, IsConnect, jlong handle) {
+    SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
     return session ? session->IsConnect() ? JNI_TRUE : JNI_FALSE : JNI_FALSE;
 }
 
-RTMPSESSION_FUNC(jint, RtmpSendVideoData, jlong handle, jbyteArray buffer, jlong len) {
+SRSRTMP_FUNC(jint, SendH264Data, jlong handle, jbyteArray buffer, jlong len) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
-    RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
-    // 解析sps 和 pps
-    int ret = session->SendVideoData((uint8_t *)data, len, 0);
+    SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
+    int ret = session->SendH264Data((uint8_t *)data, len, 0);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;
 }
 
-RTMPSESSION_FUNC(jboolean, RtmpSendAudioData, jlong handle, jbyteArray buffer, jlong len) {
+SRSRTMP_FUNC(jboolean, SendAacData, jlong handle, jbyteArray buffer, jlong len) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
-    RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
-    // 解析音频 AAC spec， 如果有需要先发送
+    SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
     int ret = session->SendAacData((uint8_t *)data, len, 0);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;
 }
 
-RTMPSESSION_FUNC(void, RtmpDisconnect, jlong handle) {
-    RtmpSession* session = reinterpret_cast<RtmpSession*>(handle);
-    session->Stop();
+SRSRTMP_FUNC(jboolean, SetAudioParams, jlong handle,
+             jint sampleRate, jint channelCount, jint sampleFormat) {
+    SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
+    session->SetAudioParams(sampleRate, channelCount, sampleFormat);
+    return 0;
+}
+
+SRSRTMP_FUNC(jboolean, SetVideoParams, jlong handle, jint frameRate) {
+  SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
+  session->SetVideoParams(frameRate);
+  return 0;
+}
+
+SRSRTMP_FUNC(void, Disconnect, jlong handle) {
+    SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
+    //session->Stop();
     delete session;
 }

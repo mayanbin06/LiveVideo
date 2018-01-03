@@ -3,8 +3,6 @@ apply plugin: 'com.android.library'
 android {
     compileSdkVersion 26
 
-
-
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 26
@@ -13,6 +11,11 @@ android {
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
+        externalNativeBuild {
+            cmake {
+                //cppFlags "-frtti -fexceptions -std=c++11"
+            }
+        }
     }
 
     buildTypes {
@@ -22,6 +25,15 @@ android {
         }
     }
 
+    externalNativeBuild {
+
+        // Encapsulates your CMake build configurations.
+        cmake {
+
+            // Provides a relative path to your CMake build script.
+            path "CMakeLists.txt"
+        }
+    }
 }
 
 dependencies {
