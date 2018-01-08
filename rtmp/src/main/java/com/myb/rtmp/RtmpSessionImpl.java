@@ -25,11 +25,11 @@ public class RtmpSessionImpl implements RtmpSession {
   }
 
   public int RtmpSendVideoData(byte[] videoData, long lLen) {
-    return SrsRtmp.SendH264Data(handle, videoData, lLen);
+    return SrsRtmp.SendH264Data(handle, videoData, lLen, 0);
   }
 
   public int RtmpSendAudioData(byte[] audioData, long lLen) {
-    return SrsRtmp.SendAacData(handle, audioData, lLen);
+    return SrsRtmp.SendAacData(handle, audioData, lLen, 0);
   }
 
   public void RtmpDisconnect(){

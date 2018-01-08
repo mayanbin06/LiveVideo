@@ -66,7 +66,11 @@ OPENH264_FUNC(jlong, InitEncode, jint nImgWidth,
     param.iPicWidth = nImgWidth;
     param.iPicHeight = nImgHight;
     param.iTargetBitrate = nBitrate;
-    encoder->Initialize (&param);
+    rv = encoder->Initialize (&param);
+    if (rv != 0) {
+      LOGE("Failed to Init SVCEncoder!!");
+      return 0;
+    }
 
     int videoFormat = videoFormatI420; // just support this?
     encoder->SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat);

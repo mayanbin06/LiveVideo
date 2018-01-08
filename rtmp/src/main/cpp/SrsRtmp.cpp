@@ -1,3 +1,4 @@
+#include <sstream>
 #include "SrsRtmp.h"
 
 #define LOG_TAG "RTMP"
@@ -35,11 +36,37 @@ bool SrsRtmp::Connect() {
 }
 
 bool SrsRtmp::Stop() {
-  if (connected_) {
+  if (connected_ || rtmp_ != NULL) {
     srs_rtmp_destroy(rtmp_);
     rtmp_ = NULL;
     connected_ = false;
+    return true;
   }
+  return false;
+}
+
+
+const char* nalTypeToString(int type)
+{
+  static const char* sps = "SPS";
+  static const char* pps = "PPS";
+  static const char* iframe = "I-frame";
+  static const char* pframe = "P-frame";
+  static const char* aud = "AUD";
+  static const char* sei = "SEI";
+  static const char* unknown = "Unknown";
+
+  switch (type) {
+    case 7: return sps;
+    case 8: return pps;
+    case 5: return iframe;
+    case 1: return pframe;
+    case 9: return aud;
+    case 6: return sei;
+    default: return unknown;
+  }
+
+  return unknown;
 }
 
 int SrsRtmp::SendH264Data(uint8_t* data, int len, long timestamp) {
@@ -53,23 +80,20 @@ int SrsRtmp::SendH264Data(uint8_t* data, int len, long timestamp) {
     if (srs_h264_is_dvbsp_error(ret)
         || srs_h264_is_duplicated_sps_error(ret)
         || srs_h264_is_duplicated_pps_error(ret)) {
-      LOGI(LOG_TAG, "ignore error, code = %d", ret);
+      LOGI("ignore error, code = %d", ret);
     } else {
-      LOGE(LOG_TAG, "fatal error, code = %d", ret);
+      LOGE("fatal error, code = %d", ret);
       Stop();
       return ret;
     }
   }
-  int nb_start_code = 4;
   // 5bits, 7.3.1 NAL unit syntax,
   // H.264-AVC-ISO_IEC_14496-10.pdf, page 44.
   //  7: SPS, 8: PPS, 5: I Frame, 1: P Frame, 9: AUD, 6: SEI
-  int nut = data[nb_start_code] & 0x1f;
-  LOGI("sent packet: type=%s, time=%d, size=%d, fps=%.2f, b[%d]=%#x(%s)",
-     srs_human_flv_tag_type2string(SRS_RTMP_TYPE_VIDEO), dts, len, frame_rate_,
-     nb_start_code, (char)data[nb_start_code],
-     (nut == 7? "SPS":(nut == 8? "PPS":(nut == 5? "I":
-            (nut == 1? "P":(nut == 9? "AUD":(nut == 6? "SEI":"Unknown")))))));
+  int nut = data[4] & 0x1f;
+  std::stringstream ss;
+  ss << "sent packet: type=video, time=" << dts << ", size=" << len << ", fps=" << frame_rate_ << ", nal=" << nalTypeToString(nut);
+  LOGI("%s", ss.str().c_str());
   return 0;
 }
 

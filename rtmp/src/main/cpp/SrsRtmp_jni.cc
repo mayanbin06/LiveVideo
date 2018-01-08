@@ -76,18 +76,18 @@ SRSRTMP_FUNC(jboolean, IsConnect, jlong handle) {
     return session ? session->IsConnect() ? JNI_TRUE : JNI_FALSE : JNI_FALSE;
 }
 
-SRSRTMP_FUNC(jint, SendH264Data, jlong handle, jbyteArray buffer, jlong len) {
+SRSRTMP_FUNC(jint, SendH264Data, jlong handle, jbyteArray buffer, jlong len, jlong time_stamp) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
     SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
-    int ret = session->SendH264Data((uint8_t *)data, len, 0);
+    int ret = session->SendH264Data((uint8_t *)data, len, time_stamp);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;
 }
 
-SRSRTMP_FUNC(jboolean, SendAacData, jlong handle, jbyteArray buffer, jlong len) {
+SRSRTMP_FUNC(jboolean, SendAacData, jlong handle, jbyteArray buffer, jlong len, jlong time_stamp) {
     jbyte* data = env->GetByteArrayElements(buffer, 0);
     SrsRtmp* session = reinterpret_cast<SrsRtmp*>(handle);
-    int ret = session->SendAacData((uint8_t *)data, len, 0);
+    int ret = session->SendAacData((uint8_t *)data, len, time_stamp);
     env->ReleaseByteArrayElements(buffer, data, 0);
     return ret;
 }

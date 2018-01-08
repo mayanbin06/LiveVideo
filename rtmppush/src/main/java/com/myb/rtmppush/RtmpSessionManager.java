@@ -45,28 +45,56 @@ public class RtmpSessionManager {
       return true;
     }
 
+    private boolean guarenteeConnected() {
+      // need connect
+      while (rtmpHandle == 0 || !rtmpSession.IsConnect(rtmpHandle)) {
+        rtmpHandle = rtmpSession.Connect(rtmpUrl);
+        if (rtmpHandle != 0) {
+          // connect success.
+          rtmpSession.SetVideoParams(rtmpHandle, frameRate);
+          rtmpSession.SetAudioParams(rtmpHandle, sampleRate, channelCount, sampleSize);
+          return true;
+        } else {
+          // connect failed, do sleep and check start flag.
+          try {
+            Thread.sleep(500);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          if (h264EncoderThread.interrupted() || (!bStartFlag)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
     @Override
     public void run() {
       while (!h264EncoderThread.interrupted() && (bStartFlag)) {
-        if (rtmpHandle == 0) {
-          rtmpHandle = rtmpSession.Connect(rtmpUrl);
-          if (rtmpHandle == 0) {
-            if (!WaitforReConnect()) {
-              break;
-            }
-            continue;
-          }
-        } else {
-          if (rtmpSession.IsConnect(rtmpHandle) == false) {
-            rtmpHandle = rtmpSession.Connect(rtmpUrl);
-            if (rtmpHandle == 0) {
-              if (!WaitforReConnect()) {
-                break;
-              }
-              continue;
-            }
-          }
+
+        if (!guarenteeConnected()) {
+          break;
         }
+//        if (rtmpHandle == 0) {
+//          rtmpHandle = rtmpSession.Connect(rtmpUrl);
+//          if (rtmpHandle == 0) {
+//            if (!WaitforReConnect()) {
+//              break;
+//            }
+//            continue;
+//          }
+//        } else {
+//          if (rtmpSession.IsConnect(rtmpHandle) == false) {
+//            rtmpHandle = rtmpSession.Connect(rtmpUrl);
+//            if (rtmpHandle == 0) {
+//              if (!WaitforReConnect()) {
+//                break;
+//              }
+//              continue;
+//            }
+//          }
+//        }
 
         if ((videoDataQueue.size() == 0) && (audioDataQueue.size() == 0)) {
           try {
@@ -83,13 +111,13 @@ public class RtmpSessionManager {
             break;
           }
           //Log.i(TAG, "###RtmpSendAudioData:"+audioData.length);
-          rtmpSession.SendAacData(rtmpHandle, audioData, audioData.length);
+          rtmpSession.SendAacData(rtmpHandle, audioData, audioData.length, audioTimeStamp += 23);
         }
 
         byte[] videoData = GetAndReleaseVideoQueue();
         if (videoData != null) {
           //Log.i(TAG, "$$$RtmpSendVideoData:"+videoData.length);
-          rtmpSession.SendH264Data(rtmpHandle, videoData, videoData.length);
+          rtmpSession.SendH264Data(rtmpHandle, videoData, videoData.length, videoTimeStamp += 30);
         }
         try {
           Thread.sleep(1);
