@@ -6,7 +6,7 @@
 #include <jni.h>
 #include <stdlib.h>
 #include <android/log.h>
-#include <wels/codec_app_def.h>
+#include <codec_app_def.h>
 #include <sstream>
 
 extern "C" {
@@ -17,9 +17,11 @@ extern "C" {
 #endif
 #include <stdint.h>
 #include <string.h>
-#include "wels/codec_api.h"
+#include "codec_api.h"
 #endif
 }
+
+#define DEBUG
 
 #define LOG_TAG "OpenH264_jni"
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, \
@@ -35,6 +37,7 @@ extern "C" {
     Java_com_myb_h264_OpenH264Encoder_ ## NAME \
       (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
+#define H264_FRAME_CLASS "com/myb/h264/H264Encoder$H264Frame"
 struct EncoderContext {
     int width;
     int height;
@@ -45,58 +48,75 @@ struct EncoderContext {
     long long first_timestamp = 0;
 };
 
+using CALLBACK_FUCTION = void (*)(void* context, int level, const char* message);
+void TraceCallback(void* context, int level, const char* message) {
+  LOGE("%s", message);
+}
+
 // init and return the handle.
 OPENH264_FUNC(jlong, InitEncode, jint nImgWidth,
             jint nImgHight, jint nBitrate,
             jint frameRate) {
 
-    ISVCEncoder *encoder = NULL;
+  ISVCEncoder *encoder = NULL;
 
-    int rv = WelsCreateSVCEncoder(&encoder);
-    if (encoder == NULL || rv != 0)
-    {
-        LOGE("Failed to create SVCEncoder!!");
-        return 0;
-    }
-
-    SEncParamBase param;
-    memset (&param, 0, sizeof (SEncParamBase));
-    param.iUsageType = CAMERA_VIDEO_REAL_TIME;
-    param.fMaxFrameRate = frameRate;
-    param.iPicWidth = nImgWidth;
-    param.iPicHeight = nImgHight;
-    param.iTargetBitrate = nBitrate;
-    rv = encoder->Initialize (&param);
-    if (rv != 0) {
-      LOGE("Failed to Init SVCEncoder!!");
+  if (WelsCreateSVCEncoder(&encoder) != cmResultSuccess)
+  {
+      LOGE("Failed to create SVCEncoder!!");
       return 0;
-    }
+  }
+  SEncParamBase param = {};
 
-    int videoFormat = videoFormatI420; // just support this?
-    encoder->SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat);
+  param.iUsageType = CAMERA_VIDEO_REAL_TIME;
+  param.fMaxFrameRate = frameRate > 30 ? 30: frameRate;
+  param.iPicWidth = nImgWidth;
+  param.iPicHeight = nImgHight;
+  param.iRCMode = RC_BITRATE_MODE;
+  param.iTargetBitrate = nBitrate;
 
-    EncoderContext* c = new EncoderContext();
-    // while processing, image size should not change.
-    // whatever, if changed, malloc the data large enough with new image size.
-    c->width = nImgWidth;
-    c->height = nImgHight;
-    c->encoder = encoder;
-//    c->data = (uint8_t*) new uint8_t[c->width * c->height * 3 / 2];
-//    c->data_length = 0;
-//    c->data_size = c->width * c->height * 3 / 2;
-    return (jlong)c;
+
+  int pixel_format = videoFormatI420;
+  int idr_interval = -1; // IDR interval seconds.
+  int log_level = WELS_LOG_ERROR;
+  CALLBACK_FUCTION callback = &TraceCallback;
+  encoder->SetOption(ENCODER_OPTION_DATAFORMAT, &pixel_format);
+  encoder->SetOption(ENCODER_OPTION_IDR_INTERVAL, &idr_interval);
+  encoder->SetOption(ENCODER_OPTION_TRACE_LEVEL, &log_level);
+  encoder->SetOption(ENCODER_OPTION_TRACE_CALLBACK, &callback);
+
+  if (encoder->Initialize (&param) != cmResultSuccess) {
+    LOGE("Failed to init encoder params!!");
+    return 0;
+  }
+
+  EncoderContext* c = new EncoderContext();
+  // while processing, image size should not change.
+  // whatever, if changed, malloc the data large enough with new image size.
+  c->width = nImgWidth;
+  c->height = nImgHight;
+  c->encoder = encoder;
+
+  LOGE("Success to create SVCEncoder");
+  return (jlong)c;
 }
 
-OPENH264_FUNC(jbyteArray, EncodeH264frame, jlong handle,
+jobject CreateH264Frame(JNIEnv* env, jbyteArray data, jlong pTimeMs, long eTimeMs) {
+  jclass h264FrameClass = env->FindClass(H264_FRAME_CLASS);
+  //javap -s class_name
+  jmethodID constructor = env->GetMethodID(h264FrameClass, "<init>", "([BJJ)V");
+  return env->NewObject(h264FrameClass, constructor, data, pTimeMs, eTimeMs);
+}
+
+OPENH264_FUNC(jobject, EncodeH264frame, jlong handle,
               jbyteArray buffer, jint format, jint rotation, jlong timeStamp) {
 
-  EncoderContext* c = (EncoderContext*)handle;
+  EncoderContext *c = (EncoderContext *) handle;
   if (c == NULL) {
-      return NULL;
+    return NULL;
   }
 
   int frameSize = c->width * c->height * 3 / 2;
-  jbyte* data = (jbyte*)env->GetByteArrayElements(buffer, 0);
+  jbyte *data = (jbyte *) env->GetByteArrayElements(buffer, 0);
 
   SSourcePicture pic = {};
   pic.iPicWidth = c->width;
@@ -104,39 +124,32 @@ OPENH264_FUNC(jbyteArray, EncodeH264frame, jlong handle,
   pic.iColorFormat = videoFormatI420;
   pic.iStride[0] = pic.iPicWidth;
   pic.iStride[1] = pic.iStride[2] = pic.iPicWidth >> 1;
-  pic.pData[0] = (uint8_t*)data;
+  pic.pData[0] = (uint8_t *) data;
   pic.pData[1] = pic.pData[0] + c->width * c->height;
   pic.pData[2] = pic.pData[1] + (c->width * c->height >> 2);
+  pic.iColorFormat = videoFormatI420;
   pic.uiTimeStamp = timeStamp;
 
   SFrameBSInfo info = {};
 
-  int rv = c->encoder->EncodeFrame (&pic, &info);
+  int rv = c->encoder->EncodeFrame(&pic, &info);
 
   if (rv != cmResultSuccess) {
-      LOGE("Encoder Frame Failed!!");
-      return NULL;
+    LOGE("Encoder Frame Failed!!");
+    return NULL;
   }
   if (info.eFrameType == videoFrameTypeSkip) {
-      return NULL;
+    return NULL;
   }
 
   size_t required_size = 0;
   size_t fragments_count = 0;
   for (int layer = 0; layer < info.iLayerNum; ++layer) {
-      const SLayerBSInfo& layerInfo = info.sLayerInfo[layer];
-      for (int nal = 0; nal < layerInfo.iNalCount; ++nal, ++fragments_count) {
-          required_size += layerInfo.pNalLengthInByte[nal];
-      }
+    const SLayerBSInfo &layerInfo = info.sLayerInfo[layer];
+    for (int nal = 0; nal < layerInfo.iNalCount; ++nal, ++fragments_count) {
+      required_size += layerInfo.pNalLengthInByte[nal];
+    }
   }
-
-  // increase data size.
-//  if (required_size > c->data_size) {
-//      delete c->data;
-//      c->data = new uint8_t[required_size];
-//      c->data_size = required_size;
-//      c->data_length = 0;
-//  }
 
   //env->NewDirectByteBuffer(); for few bytes, use copy is faster than DirectBuffer.
   // 这样创建的内存不在虚拟机的管理范围，而且需要同步Native和Java Object，保证数据可用。
@@ -144,7 +157,14 @@ OPENH264_FUNC(jbyteArray, EncodeH264frame, jlong handle,
   //jobject directBuffer = env->NewDirectByteBuffer(c->data, required_size);
 
   jbyteArray arr = env->NewByteArray(required_size);
-  jbyte* arrPtr = env->GetByteArrayElements(arr, NULL);
+  jbyte *arrPtr = env->GetByteArrayElements(arr, NULL);
+
+#if defined(DEBUG)
+  if (info.eFrameType == videoFrameTypeIDR) {
+    LOGE("%p, type = IDR, layer nums = %d, encoder time = %lld", c, info.iLayerNum,
+         info.uiTimeStamp);
+  }
+#endif
 
   // the first IDR contains the sps and pps.
   int length = 0;
@@ -160,10 +180,11 @@ OPENH264_FUNC(jbyteArray, EncodeH264frame, jlong handle,
     length += layer_len;
   }
 
+  jobject frame = CreateH264Frame(env, arr, pic.uiTimeStamp, info.uiTimeStamp);
   env->ReleaseByteArrayElements(buffer, data, 0);
   env->ReleaseByteArrayElements(arr, arrPtr, 0);
 
-  return arr;
+  return frame;
 }
 
 OPENH264_FUNC(void, DeInitEncode, jlong handle) {

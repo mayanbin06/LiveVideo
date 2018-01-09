@@ -7,6 +7,16 @@ import android.graphics.ImageFormat;
  */
 
 abstract public class H264Encoder {
+  public static class H264Frame {
+    public byte[] data;
+    public long presentationTimeMs;
+    public long encodedTimeMs;
+    public H264Frame(byte[] data, long pTimeMs, long eTimeMs) {
+      this.data = data;
+      this.presentationTimeMs = pTimeMs;
+      this.encodedTimeMs = eTimeMs;
+    }
+  }
   protected int width;
   protected int height;
   protected int framerate;
@@ -23,8 +33,8 @@ abstract public class H264Encoder {
     this.bitrate = bitrate;
   }
 
-  // thus width or height changed, we may re init decoder.
-  public byte[] encode(byte[] src, int format, int width, int height, int rotation) {
+  // thus width or height changed, we may re-init encoder.
+  public H264Frame encode(byte[] src, int format, int width, int height, int rotation) {
     return null;
   }
 }

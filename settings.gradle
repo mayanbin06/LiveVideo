@@ -1,1 +1,1 @@
-include ':app', ':rtmppush', ':libyuv', ':h264', ':fdkaac', ':rtmp'
+include ':app', ':rtmppush', ':libyuv', ':h264', ':fdkaac', ':srs-rtmp', ':librtmp'

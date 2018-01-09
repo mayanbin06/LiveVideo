@@ -18,18 +18,18 @@ public class SoftwareH264Encoder extends H264Encoder {
   }
 
   @Override
-  public byte[] encode(byte[] src, int format, int width, int height, int rotation) {
-    int requestWidth = width;
-    int requestHeight = height;
-    int requestFormat = format;
-    int requestSize = width * height * 3/2;
+  public H264Frame encode(byte[] src, int format, int imgWidth, int imgHeight, int rotation) {
+    int requestWidth = imgWidth;
+    int requestHeight = imgHeight;
+    int requestFormat = format; // now supports I420
+    int requestSize = imgWidth * imgHeight * 3/2;
     // OpenH264需要I420的标准YUV格式, 计算I420所需空间, 转化为I420.
     if (editBuffer == null || editBuffer.length < requestSize) {
-      editBuffer = new byte[width * height * 3/2];
+      editBuffer = new byte[imgWidth * imgHeight * 3/2];
     }
     switch (format) {
       case NV21:
-        LibYuv.NV21ToI420(src, editBuffer, width, height, false);
+        LibYuv.NV21ToI420(src, editBuffer, imgWidth, imgHeight, false);
         break;
       case I420:
         break;
@@ -40,12 +40,12 @@ public class SoftwareH264Encoder extends H264Encoder {
     }
     if (rotation == 90 || rotation == 270) {
       // rotation 会改变视频的长宽, 重新初始化Encoder，如何下次还是同样的角度，则不需要再初始化
-      LibYuv.I420Rotate(editBuffer, src, width, height, rotation);
-      requestWidth = height;
-      requestHeight = width;
+      LibYuv.I420Rotate(editBuffer, src, imgWidth, imgHeight, rotation);
+      requestWidth = imgHeight;
+      requestHeight = imgWidth;
     }
     // 参数改变
-    if (width != requestWidth || height != requestHeight) {
+    if (this.width != requestWidth || this.height != requestHeight) {
       this.width = requestWidth;
       this.height = requestHeight;
       releaseEncoder();

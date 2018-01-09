@@ -27,11 +27,11 @@ extern "C" {
 #define FDKAAC_FUNC(RETURN_TYPE, NAME, ...) \
   extern "C" { \
   JNIEXPORT RETURN_TYPE \
-    Java_com_myb_fdkaac_FdkAacEncode_ ## NAME \
+    Java_com_myb_fdkaac_FdkAacEncoder_ ## NAME \
       (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
   } \
   JNIEXPORT RETURN_TYPE \
-    Java_com_myb_fdkaac_FdkAacEncode_ ## NAME \
+    Java_com_myb_fdkaac_FdkAacEncoder_ ## NAME \
       (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 // init and return the handle.

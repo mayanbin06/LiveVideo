@@ -3,6 +3,9 @@ package com.myb.rtmppush.ui;
 import android.app.Activity;
 import android.os.Bundle;
 
+import com.myb.fdkaac.AacEncoder;
+import com.myb.fdkaac.SoftwareAacEncoder;
+import com.myb.h264.H264Encoder;
 import com.myb.rtmppush.R;
 
 import java.io.DataOutputStream;
@@ -16,7 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.myb.fdkaac.FdkAacEncode;
+import com.myb.fdkaac.FdkAacEncoder;
 import com.myb.rtmppush.RtmpSessionManager;
 import com.myb.h264.SoftwareH264Encoder;
 
@@ -65,6 +68,7 @@ public class PushActivity extends Activity {
   // 以录音设备支持为准
   private int CHANNEL_NUMBER_DEF = 2;
   private int AUDIO_FORMAT_DEF = AudioFormat.ENCODING_PCM_16BIT;
+  private int AUDIO_SOUND_TYPE = AudioFormat.CHANNEL_IN_MONO;
 
   private final String LOG_TAG = "RTMP-MAIN-ACTIVITY";
   private final boolean DEBUG_ENABLE = true;
@@ -77,7 +81,7 @@ public class PushActivity extends Activity {
   // audio
   private AudioRecord _AudioRecorder = null;
   private byte[] _RecorderBuffer = null;
-  private FdkAacEncode _fdkaacEnc = null;
+  private SoftwareAacEncoder _fdkaacEnc = null;
   private long _fdkaacHandle = 0;
 
   // video
@@ -158,14 +162,14 @@ public class PushActivity extends Activity {
               rotate = _bIsFront ? 270 : 90;
           }
 
-          byte[] h264Data = _swEncH264.encode(yuvData, _iCameraCodecType, WIDTH_DEF, HEIGHT_DEF, rotate);
+          H264Encoder.H264Frame h264Data = _swEncH264.encode(yuvData, _iCameraCodecType, WIDTH_DEF, HEIGHT_DEF, rotate);
 
           if (h264Data != null) {
             _rtmpSessionMgr.InsertVideoData(h264Data);
             if (DEBUG_ENABLE) {
               try {
-                _outputStream.write(h264Data);
-                int iH264Len = h264Data.length;
+                _outputStream.write(h264Data.data);
+                int iH264Len = h264Data.data.length;
               } catch (IOException e1) {
                 e1.printStackTrace();
               }
@@ -204,20 +208,18 @@ public class PushActivity extends Activity {
       while (!_AacEncoderThread.interrupted() && _bStartFlag) {
         int iPCMLen = _AudioRecorder.read(_RecorderBuffer, 0, _RecorderBuffer.length); // Fill buffer
         if ((iPCMLen != _AudioRecorder.ERROR_BAD_VALUE) && (iPCMLen != 0)) {
-          if (_fdkaacHandle != 0) {
-            byte[] aacBuffer = _fdkaacEnc.FdkAacEncode(_fdkaacHandle, _RecorderBuffer);
-            if (aacBuffer != null) {
-              long lLen = aacBuffer.length;
+          AacEncoder.AacFrame frame = _fdkaacEnc.encode(_RecorderBuffer);
+          if (frame != null) {
+            long lLen = frame.data.length;
 
-              _rtmpSessionMgr.InsertAudioData(aacBuffer);
-              //Log.i(LOG_TAG, "fdk aac length="+lLen+" from pcm="+iPCMLen);
-              if (DEBUG_ENABLE) {
-                try {
-                  outputStream.write(aacBuffer);
-                } catch (IOException e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                }
+            _rtmpSessionMgr.InsertAudioData(frame);
+            //Log.i(LOG_TAG, "fdk aac length="+lLen+" from pcm="+iPCMLen);
+            if (DEBUG_ENABLE) {
+              try {
+                outputStream.write(frame.data);
+              } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
               }
             }
           }
@@ -376,7 +378,10 @@ public class PushActivity extends Activity {
     }
 
     _rtmpSessionMgr = new RtmpSessionManager();
-    _rtmpSessionMgr.SetAudioParams(SAMPLE_RATE_DEF, CHANNEL_NUMBER_DEF, AUDIO_FORMAT_DEF);
+    // srs rtmp support 8 and 16, 0-mono, 1-stero.
+    _rtmpSessionMgr.SetAudioParams(SAMPLE_RATE_DEF, CHANNEL_NUMBER_DEF,
+        AUDIO_FORMAT_DEF == AudioFormat.ENCODING_PCM_16BIT ? 16 : 8,
+        AUDIO_SOUND_TYPE == AudioFormat.CHANNEL_IN_MONO ? 0 : 1);
     _rtmpSessionMgr.SetVideoParams(FRAMERATE_DEF);
     _rtmpSessionMgr.Start(_rtmpUrl);
 
@@ -445,10 +450,10 @@ public class PushActivity extends Activity {
 
   private void InitAudioRecord() {
     _iRecorderBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE_DEF,
-        AudioFormat.CHANNEL_IN_MONO,
+        AUDIO_SOUND_TYPE,
         AUDIO_FORMAT_DEF);
     _AudioRecorder = new AudioRecord(AudioSource.MIC,
-        SAMPLE_RATE_DEF, AudioFormat.CHANNEL_IN_MONO,
+        SAMPLE_RATE_DEF, AUDIO_SOUND_TYPE,
         AUDIO_FORMAT_DEF, _iRecorderBufferSize);
     _RecorderBuffer = new byte[_iRecorderBufferSize];
 
@@ -460,8 +465,7 @@ public class PushActivity extends Activity {
       AUDIO_FORMAT_DEF = _AudioRecorder.getAudioFormat();
     }
 
-    _fdkaacEnc = new FdkAacEncode();
-    _fdkaacHandle = _fdkaacEnc.FdkAacInit(SAMPLE_RATE_DEF, CHANNEL_NUMBER_DEF);
+    _fdkaacEnc = new SoftwareAacEncoder(SAMPLE_RATE_DEF, CHANNEL_NUMBER_DEF);
   }
 
   public Handler mHandler = new Handler() {

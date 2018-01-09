@@ -1,5 +1,8 @@
 package com.myb.rtmppush;
 
+import com.myb.fdkaac.AacEncoder;
+import com.myb.h264.H264Encoder;
+
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
@@ -7,10 +10,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class RtmpSessionManager {
   private final String TAG = "RtmpSessionManager";
-  private Queue<byte[]> videoDataQueue = new LinkedList<byte[]>();
+  private Queue<H264Encoder.H264Frame> videoDataQueue = new LinkedList<H264Encoder.H264Frame>();
   private Lock videoDataQueueLock = new ReentrantLock();
 
-  private Queue<byte[]> audioDataQueue = new LinkedList<byte[]>();
+  private Queue<AacEncoder.AacFrame> audioDataQueue = new LinkedList<AacEncoder.AacFrame>();
   private Lock audioDataQueueLock = new ReentrantLock();
 
   private com.myb.rtmp.SrsRtmp rtmpSession = null;
@@ -23,6 +26,7 @@ public class RtmpSessionManager {
   private int sampleRate;
   private int channelCount;
   private int sampleSize;
+  private int soundType;
   // video params.
   private int frameRate;
 
@@ -52,7 +56,7 @@ public class RtmpSessionManager {
         if (rtmpHandle != 0) {
           // connect success.
           rtmpSession.SetVideoParams(rtmpHandle, frameRate);
-          rtmpSession.SetAudioParams(rtmpHandle, sampleRate, channelCount, sampleSize);
+          rtmpSession.SetAudioParams(rtmpHandle, sampleRate, channelCount, sampleSize, soundType);
           return true;
         } else {
           // connect failed, do sleep and check start flag.
@@ -106,18 +110,18 @@ public class RtmpSessionManager {
         }
         //Log.i(TAG, "VideoQueue length="+_videoDataQueue.size()+", AudioQueue length="+_audioDataQueue.size());
         for (int i = 0; i < 100; i++) {
-          byte[] audioData = GetAndReleaseAudioQueue();
-          if (audioData == null) {
+          AacEncoder.AacFrame aacFrame = GetAndReleaseAudioQueue();
+          if (aacFrame == null) {
             break;
           }
           //Log.i(TAG, "###RtmpSendAudioData:"+audioData.length);
-          rtmpSession.SendAacData(rtmpHandle, audioData, audioData.length, audioTimeStamp += 23);
+          rtmpSession.SendAacData(rtmpHandle, aacFrame.data, aacFrame.data.length, aacFrame.encodedTimeMs);
         }
 
-        byte[] videoData = GetAndReleaseVideoQueue();
-        if (videoData != null) {
+        H264Encoder.H264Frame h264Frame = GetAndReleaseVideoQueue();
+        if (h264Frame != null) {
           //Log.i(TAG, "$$$RtmpSendVideoData:"+videoData.length);
-          rtmpSession.SendH264Data(rtmpHandle, videoData, videoData.length, videoTimeStamp += 30);
+          rtmpSession.SendH264Data(rtmpHandle, h264Frame.data, h264Frame.data.length, h264Frame.encodedTimeMs);
         }
         try {
           Thread.sleep(1);
@@ -158,7 +162,7 @@ public class RtmpSessionManager {
     h264EncoderThread.interrupt();
   }
 
-  public void InsertVideoData(byte[] videoData) {
+  public void InsertVideoData(H264Encoder.H264Frame frame) {
     if (!bStartFlag) {
       return;
     }
@@ -166,11 +170,11 @@ public class RtmpSessionManager {
     if (videoDataQueue.size() > 50) {
       videoDataQueue.clear();
     }
-    videoDataQueue.offer(videoData);
+    videoDataQueue.offer(frame);
     videoDataQueueLock.unlock();
   }
 
-  public void InsertAudioData(byte[] videoData) {
+  public void InsertAudioData(AacEncoder.AacFrame frame) {
     if (!bStartFlag) {
       return;
     }
@@ -178,33 +182,34 @@ public class RtmpSessionManager {
     if (audioDataQueue.size() > 50) {
       audioDataQueue.clear();
     }
-    audioDataQueue.offer(videoData);
+    audioDataQueue.offer(frame);
     audioDataQueueLock.unlock();
   }
 
-  public byte[] GetAndReleaseVideoQueue() {
+  public H264Encoder.H264Frame GetAndReleaseVideoQueue() {
     videoDataQueueLock.lock();
-    byte[] videoData = videoDataQueue.poll();
+    H264Encoder.H264Frame frame = videoDataQueue.poll();
     videoDataQueueLock.unlock();
 
-    return videoData;
+    return frame;
   }
 
-  public byte[] GetAndReleaseAudioQueue() {
+  public AacEncoder.AacFrame GetAndReleaseAudioQueue() {
     audioDataQueueLock.lock();
-    byte[] audioData = audioDataQueue.poll();
+    AacEncoder.AacFrame frame = audioDataQueue.poll();
     audioDataQueueLock.unlock();
 
-    return audioData;
+    return frame;
   }
 
   public void SetVideoParams(int frameRate) {
     this.frameRate = frameRate;
   }
 
-  public void SetAudioParams(int sampleRate, int channelCount, int sampleSize) {
+  public void SetAudioParams(int sampleRate, int channelCount, int sampleSize, int soundType) {
     this.sampleRate = sampleRate;
     this.channelCount = channelCount;
     this.sampleSize = sampleSize;
+    this.soundType = soundType;
   }
 }
