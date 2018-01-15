@@ -21,7 +21,7 @@ extern "C" {
 #endif
 }
 
-#define DEBUG
+//#define DEBUG
 
 #define LOG_TAG "OpenH264_jni"
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, \
@@ -45,7 +45,7 @@ struct EncoderContext {
     uint8_t * data;
     size_t data_length;
     size_t data_size;
-    long long first_timestamp = 0;
+    int frame_encoded;
 };
 
 using CALLBACK_FUCTION = void (*)(void* context, int level, const char* message);
@@ -76,7 +76,7 @@ OPENH264_FUNC(jlong, InitEncode, jint nImgWidth,
 
 
   int pixel_format = videoFormatI420;
-  int idr_interval = -1; // IDR interval seconds.
+  int idr_interval = 16; // IDR interval seconds. 好像没有起作用
   int log_level = WELS_LOG_ERROR;
   CALLBACK_FUCTION callback = &TraceCallback;
   encoder->SetOption(ENCODER_OPTION_DATAFORMAT, &pixel_format);
@@ -132,6 +132,13 @@ OPENH264_FUNC(jobject, EncodeH264frame, jlong handle,
 
   SFrameBSInfo info = {};
 
+  // 每50帧插入一个I-frame，
+  // 若一直不发关键帧，生成的HLS文件中ts文件很大，且每个ts之间都有discontinue tag，
+  // RTMP服务器那边以I-Frame来分割TS?
+  if (c->frame_encoded % 50 == 0) {
+    c->encoder->ForceIntraFrame(true);
+  }
+  c->frame_encoded ++;
   int rv = c->encoder->EncodeFrame(&pic, &info);
 
   if (rv != cmResultSuccess) {
@@ -160,10 +167,8 @@ OPENH264_FUNC(jobject, EncodeH264frame, jlong handle,
   jbyte *arrPtr = env->GetByteArrayElements(arr, NULL);
 
 #if defined(DEBUG)
-  if (info.eFrameType == videoFrameTypeIDR) {
-    LOGE("%p, type = IDR, layer nums = %d, encoder time = %lld", c, info.iLayerNum,
-         info.uiTimeStamp);
-  }
+  LOGE("%p, type = %d, layer nums = %d, encoder time = %lld", c, info.eFrameType, info.iLayerNum,
+       info.uiTimeStamp);
 #endif
 
   // the first IDR contains the sps and pps.
