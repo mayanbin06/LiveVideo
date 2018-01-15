@@ -135,7 +135,7 @@ OPENH264_FUNC(jobject, EncodeH264frame, jlong handle,
   // 每50帧插入一个I-frame，
   // 若一直不发关键帧，生成的HLS文件中ts文件很大，且每个ts之间都有discontinue tag，
   // RTMP服务器那边以I-Frame来分割TS?
-  if (c->frame_encoded % 50 == 0) {
+  if (c->frame_encoded % 20 == 0) {
     c->encoder->ForceIntraFrame(true);
   }
   c->frame_encoded ++;
